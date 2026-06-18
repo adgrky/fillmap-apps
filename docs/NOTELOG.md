@@ -21,6 +21,11 @@
 - 詰まり: 汎用層をバレルに足すと既存rail版と名前衝突(formatRatio等) → サブパス export "./generic" で分離し railmap 無傷を維持で解決
 - 記事ネタ度: ★★★ / タグ: #モノレポ #早すぎる抽象化 #2本目で線引き 📷
 
+### 2026-06-19 | citymap | N03前処理 + 全国データ化(P0) 📷
+- やったこと: N03 SHP(242MB)を都道府県別バッチ処理で全国1905自治体geojson生成。tolerance+座標4桁丸めで10.86MB(gzip 1.77MB)
+- 詰まり: GeoJSONまるごとロード → OOM kill(exit 137) → SHPバッチ方式に切り替えで解決。rglob が _prefecture を先に拾う誤りも修正
+- 記事ネタ度: ★★★ / タグ: #N03 #geopandas #OOM #座標丸め
+
 ### 2026-06-18 | citymap | 地図の自動フィット
 - やったこと: FeatureCollectionのbbox計算→fitBoundsを実装(turf不使用)。サンプル東京/本番全国どちらも適切に収まる
 - 詰まり: 初期zoom固定だと6区が点になり操作不能 → bbox自動フィットで解決
