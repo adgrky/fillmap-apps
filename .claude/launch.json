@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "-w", "railmap"],
       "port": 5173
+    },
+    {
+      "name": "citymap",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "citymap"],
+      "port": 5180
     }
   ]
 }
