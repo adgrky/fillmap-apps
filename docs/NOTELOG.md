@@ -15,3 +15,13 @@
 - やったこと: 41_notelog_spec.md を docs へ、CLAUDE.md に NOTELOGルール§2ブロックを追記、本ファイルを作成
 - 詰まり: なし
 - 記事ネタ度: ★ / タグ: #運用 #note素材化
+
+### 2026-06-18 | citymap | 2本目骨格 + core汎用層の線引き
+- やったこと: POLYGONモードでcitymap骨格を実装(レベル制0-5/スコア/称号/保存)。汎用部品(createPersistence等)を @fillmap/core/generic に新設し実証
+- 詰まり: 汎用層をバレルに足すと既存rail版と名前衝突(formatRatio等) → サブパス export "./generic" で分離し railmap 無傷を維持で解決
+- 記事ネタ度: ★★★ / タグ: #モノレポ #早すぎる抽象化 #2本目で線引き 📷
+
+### 2026-06-18 | citymap | 地図の自動フィット
+- やったこと: FeatureCollectionのbbox計算→fitBoundsを実装(turf不使用)。サンプル東京/本番全国どちらも適切に収まる
+- 詰まり: 初期zoom固定だと6区が点になり操作不能 → bbox自動フィットで解決
+- 記事ネタ度: ★★ / タグ: #maplibre #GeoJSON
