@@ -1,0 +1,16 @@
+{
+  "name": "fillmap-apps",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w railmap",
+    "build": "npm run build -w railmap",
+    "typecheck": "npm run typecheck -w railmap",
+    "preview": "npm run preview -w railmap"
+  }
+}
