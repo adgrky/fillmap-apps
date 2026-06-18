@@ -40,13 +40,7 @@ async function buildDarkStyle(): Promise<StyleSpecification> {
   return { ...style, layers: patched };
 }
 
-// §7.1: line-gradient を使った「光が走る」アニメーション(600ms, ease-out)
-// GeoJSON ソースに lineMetrics:true が必要。
-const ANIM_DURATION = 600;
 
-function easeOut(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
 
 /** themeColor の hex を rgba(r,g,b,alpha) に変換(グロー用)。 */
 
@@ -87,7 +81,7 @@ export function MapView({ riddenIds, themeColor, selectedLineId, onSelectLine, o
         attributionControl: { compact: true },
       });
       mapRef.current = map;
-      (window as unknown as { __map?: maplibregl.Map }).__map = map;
+      if (import.meta.env.DEV) (window as unknown as { __map?: maplibregl.Map }).__map = map;
 
       map.on("load", () => {
         // lineMetrics:true で line-gradient を有効化(§7.1)
@@ -283,7 +277,7 @@ function applySelected(map: maplibregl.Map, selectedLineId: string | null) {
   map.setFilter("lines-selected", ["==", ["get", "lineId"], selectedLineId ?? "__none__"]);
 }
 
-/** §7.1 塗りアニメ: 始点→終点へ光が走る(600ms, ease-out) → グロー fade in(300ms)。 */
+/** §7.1 塗りアニメ: 始点→終点へ光が走る → 完走フラッシュ → グローオーバーシュート。 */
 function animateLine(
   map: maplibregl.Map,
   lineId: string,
@@ -291,56 +285,87 @@ function animateLine(
   rafRef: React.MutableRefObject<number | null>,
   onComplete: () => void
 ): void {
-  // prefers-reduced-motion: 即時完了
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     onComplete();
     return;
   }
 
-  // ビームは白にしてテーマカラーの線の上でも視認できるようにする(§7.1「光が走る」)
-  const rgba = "rgba(255,255,255,0.95)";
+  const BEAM_MS   = 400;   // ビーム走行時間(速くして疾走感)
+  const FLASH_MS  = 180;   // 完走後の全線フラッシュ時間
+  const GLOW_MS   = 500;   // グロー収束時間
+  const WHITE     = "rgba(255,255,255,1.0)";
+  const FAINT     = "rgba(255,255,255,0.15)";  // 尾の付け根の残光
+  const CLEAR     = "rgba(0,0,0,0)";
+
+  // 選択ハイライト(白 width3.5)はビームより上でビームを隠すため消す
+  map.setFilter("lines-selected", ["==", ["get", "lineId"], "__none__"]);
+  map.setFilter("lines-anim",     ["==", ["get", "lineId"], lineId]);
+
   const start = performance.now();
 
-  // アニメレイヤーをこの路線に絞り込む
-  map.setFilter("lines-anim", ["==", ["get", "lineId"], lineId]);
-
   function step(now: number) {
-    const raw = Math.min((now - start) / ANIM_DURATION, 1);
-    const progress = easeOut(raw);
+    const raw = Math.min((now - start) / BEAM_MS, 1);
+    // 4乗 ease-out: 最初の瞬発感が強い
+    const progress = 1 - Math.pow(1 - raw, 4);
 
-    // ストップ位置が重複すると MapLibre が式を無効として黙って捨てるため
-    // 常に厳密単調増加になるよう EPS でクランプする
-    const EPS = 0.002;
-    const head = Math.max(EPS, Math.min(1 - EPS, progress));
-    const tail = Math.max(0, head - 0.1);
-    const afterHead = Math.min(1, head + EPS);
+    const EPS  = 0.002;
+    const head = Math.max(EPS,       Math.min(1 - EPS, progress));
+    const mid  = Math.max(0,         head - 0.06);   // ビーム芯の始まり
+    const tail = Math.max(0,         head - 0.22);   // 残光の始まり
+    const aft  = Math.min(1,         head + EPS);
 
-    // ビームがまだ先頭にいる間は 0 からそのまま始める(stops 重複回避)
-    const gradStops: (number | string)[] = tail > 0
-      ? [0, "rgba(0,0,0,0)", tail, rgba, head, rgba, afterHead, "rgba(0,0,0,0)"]
-      : [0, rgba, head, rgba, afterHead, "rgba(0,0,0,0)"];
-    if (afterHead < 1) gradStops.push(1, "rgba(0,0,0,0)");
+    // 残光(FAINT)→ 白芯(WHITE)→ 先端(WHITE)→ 即透明
+    const stops: (number | string)[] = [];
+    stops.push(0, CLEAR);
+    if (tail > EPS) stops.push(tail, FAINT);
+    if (mid  > tail + EPS) stops.push(mid, WHITE);
+    stops.push(head, WHITE, aft, CLEAR);
+    if (aft < 1 - EPS) stops.push(1, CLEAR);
 
-    map.setPaintProperty("lines-anim", "line-gradient", [
-      "interpolate", ["linear"], ["line-progress"],
-      ...gradStops,
-    ]);
+    map.setPaintProperty("lines-anim", "line-gradient",
+      ["interpolate", ["linear"], ["line-progress"], ...stops]);
 
     if (raw < 1) {
       rafRef.current = requestAnimationFrame(step);
     } else {
-      // アニメ完了: animレイヤーを非表示に戻す
-      map.setFilter("lines-anim", ["==", ["get", "lineId"], "__none__"]);
-      onComplete();
+      // ── 完走フラッシュ: 全線を一瞬パッと白く飛ばす ──
+      map.setPaintProperty("lines-anim", "line-gradient",
+        ["interpolate", ["linear"], ["line-progress"], 0, WHITE, 1, WHITE]);
 
-      // グロー fade in (300ms, §7.1 step2)
-      const glowStart = performance.now();
-      function fadeGlow(t: number) {
-        const p = Math.min((t - glowStart) / 300, 1);
-        map.setPaintProperty("lines-glow", "line-opacity", p * 0.4);
-        if (p < 1) rafRef.current = requestAnimationFrame(fadeGlow);
+      onComplete();  // カウントアップ開始
+
+      const phaseStart = performance.now();
+
+      function finishStep(t: number) {
+        const fp = Math.min((t - phaseStart) / FLASH_MS, 1);   // フラッシュ進捗
+        const gp = Math.min((t - phaseStart) / GLOW_MS,  1);   // グロー進捗
+
+        // フラッシュ: 白→透明にフェード
+        if (fp < 1) {
+          const a = (1 - fp).toFixed(3);
+          map.setPaintProperty("lines-anim", "line-gradient",
+            ["interpolate", ["linear"], ["line-progress"],
+              0, `rgba(255,255,255,${a})`, 1, `rgba(255,255,255,${a})`]);
+        } else {
+          map.setFilter("lines-anim", ["==", ["get", "lineId"], "__none__"]);
+        }
+
+        // グロー: 0 → 0.7(オーバーシュート) → 0.4(定常)
+        const glowTarget = gp < 0.6
+          ? gp / 0.6 * 0.7
+          : 0.7 - (gp - 0.6) / 0.4 * 0.3;
+        map.setPaintProperty("lines-glow", "line-opacity", glowTarget);
+
+        if (gp < 1) {
+          rafRef.current = requestAnimationFrame(finishStep);
+        } else {
+          map.setPaintProperty("lines-glow", "line-opacity", 0.4);
+          // 選択ハイライト復元
+          map.setFilter("lines-selected", ["==", ["get", "lineId"], lineId]);
+        }
       }
-      rafRef.current = requestAnimationFrame(fadeGlow);
+
+      rafRef.current = requestAnimationFrame(finishStep);
     }
   }
 
