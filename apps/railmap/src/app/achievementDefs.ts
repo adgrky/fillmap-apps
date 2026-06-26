@@ -1,6 +1,6 @@
 // 称号定義(SPEC §9)。app層: railmap 固有。12個。
 // 条件は `(stats) => boolean` で注入。判定エンジン(core/achievements.ts)は定義を知らない。
-import type { AchievementDef } from "@fillmap/core";
+import type { AchievementDef } from "../domain/achievements";
 
 const KANTO_PREFS = ["東京", "神奈川", "埼玉", "千葉", "茨城", "栃木", "群馬"];
 const KANSAI_PREFS = ["大阪", "京都", "兵庫", "奈良", "和歌山", "滋賀"];

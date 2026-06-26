@@ -1,0 +1,100 @@
+{
+  "blocks": [
+    {
+      "id": "01_hokkaido",
+      "name": "北海道",
+      "file": "data/blocks/01_hokkaido.geojson",
+      "bbox": [
+        139.334,
+        41.3517,
+        148.8944,
+        45.5572
+      ],
+      "count": 194
+    },
+    {
+      "id": "02_tohoku",
+      "name": "東北",
+      "file": "data/blocks/02_tohoku.geojson",
+      "bbox": [
+        139.1659,
+        36.7914,
+        142.0725,
+        41.556
+      ],
+      "count": 231
+    },
+    {
+      "id": "03_kanto",
+      "name": "関東",
+      "file": "data/blocks/03_kanto.geojson",
+      "bbox": [
+        136.0695,
+        20.4229,
+        153.9861,
+        37.1534
+      ],
+      "count": 423
+    },
+    {
+      "id": "04_chubu",
+      "name": "中部",
+      "file": "data/blocks/04_chubu.geojson",
+      "bbox": [
+        135.4494,
+        34.5735,
+        139.8999,
+        38.5536
+      ],
+      "count": 277
+    },
+    {
+      "id": "05_kinki",
+      "name": "近畿",
+      "file": "data/blocks/05_kinki.geojson",
+      "bbox": [
+        134.2527,
+        33.4326,
+        136.9901,
+        35.779
+      ],
+      "count": 275
+    },
+    {
+      "id": "06_chugoku",
+      "name": "中国四国",
+      "file": "data/blocks/06_chugoku.geojson",
+      "bbox": [
+        130.7748,
+        32.7025,
+        134.8223,
+        37.2475
+      ],
+      "count": 212
+    },
+    {
+      "id": "07_kyushu",
+      "name": "九州",
+      "file": "data/blocks/07_kyushu.geojson",
+      "bbox": [
+        128.1046,
+        27.0224,
+        132.1774,
+        34.7286
+      ],
+      "count": 251
+    },
+    {
+      "id": "08_okinawa",
+      "name": "沖縄",
+      "file": "data/blocks/08_okinawa.geojson",
+      "bbox": [
+        122.9326,
+        24.0459,
+        131.3321,
+        27.886
+      ],
+      "count": 42
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# Capacitor / Android ネイティブ生成物・秘匿情報(SPEC §14.6)
+# android/ の設定(AndroidManifest/build.gradle/アイコン等)は正本としてコミットし、
+# ビルド生成物と署名情報のみ無視する。
+/android/.gradle
+/android/build
+/android/app/build
+/android/captures
+/android/local.properties
+/android/.idea
+/android/app/release
+# 署名鍵・署名情報は絶対にコミットしない(iCloud で管理)
+*.keystore
+*.jks
+key.properties

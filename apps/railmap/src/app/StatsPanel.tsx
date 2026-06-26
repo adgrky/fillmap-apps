@@ -1,6 +1,7 @@
 // 統計画面(SPEC §5.3)。div+CSS のみ。グラフライブラリ不使用(§5.3)。app層。
-import type { Meta, RailType, SaveData } from "@fillmap/core";
-import { conversionText, formatRatio, railTypeRatio, riddenKm } from "@fillmap/core";
+import type { Meta, RailType, SaveData } from "../domain/types";
+import { conversionText, railTypeRatio, riddenKm } from "../domain/progress";
+import { formatRatio } from "@fillmap/core/generic";
 
 // §8.1 注: 都道府県データは Phase 2 時点で pref:[] のため都道府県グリッドは距離0で描画。
 // 都道府県別集計の精緻化は Phase 2 残課題(PROGRESS.md)。

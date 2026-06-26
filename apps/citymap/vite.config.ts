@@ -3,16 +3,21 @@ import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
+// CAP_BUILD=1 のとき = Capacitor(ネイティブアプリ)向けビルド(SPEC §14.2, railmap同様)。
+// ネイティブは localhost ルート配信なので base="/"、かつ PWA(Service Worker)を無効化する。
+const isCap = process.env.CAP_BUILD === "1";
+
 export default defineConfig({
-  base: "./",
+  base: isCap ? "/" : "./",
   resolve: {
     alias: {
       "@fillmap/core/generic": fileURLToPath(new URL("../../packages/core/src/generic.ts", import.meta.url)),
+      "@fillmap/core": fileURLToPath(new URL("../../packages/core/src/index.ts", import.meta.url)),
     },
   },
   plugins: [
     react(),
-    VitePWA({
+    ...(isCap ? [] : [VitePWA({
       registerType: "autoUpdate",
       includeAssets: [],
       manifest: {
@@ -23,12 +28,15 @@ export default defineConfig({
         background_color: "#0b0e14",
         display: "standalone",
         start_url: "./",
-        icons: [],
+        icons: [
+          { src: "icons/icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+        ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}", "data/*.{geojson,json}"],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
       },
-    }),
+    })]),
   ],
 });

@@ -1,9 +1,6 @@
-// @fillmap/core バレル。アプリ側は `from "@fillmap/core"` の1本で全エンジンを参照する。
-// ⚠️ 現状は railmap から素直に昇格した段階のため、rail固有(Meta/RailType/buildStats 等)も含む。
-// 2本目(citymap)着手時に「真に汎用な部分」と「アプリ固有」をここで線引きし直す。
-export * from "./types";
-export * from "./persistence";
-export * from "./progress";
-export * from "./achievements";
-export * from "./shareImage";
-export * from "./store";
+// @fillmap/core バレル。汎用層のみを公開。
+// 鉄道固有コード(Meta/RailType/SaveData/buildStats 等)は apps/railmap/src/domain/ へ移動済み。
+export * from "./generic";
+export * from "./analytics";
+export * from "./ads";
+export * from "./iap";

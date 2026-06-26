@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">道の駅埋め立てマップ</string>
+    <string name="title_activity_main">道の駅埋め立てマップ</string>
+    <string name="package_name">com.adgrky.michimap</string>
+    <string name="custom_url_scheme">com.adgrky.michimap</string>
+</resources>

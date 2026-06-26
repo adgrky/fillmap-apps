@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@fillmap/core/generic": ["../../packages/core/src/generic.ts"]
+    }
+  },
+  "include": ["src"]
+}

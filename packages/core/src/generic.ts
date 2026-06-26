@@ -226,3 +226,49 @@ export function formatRatio(ratio: number): string {
   if (pct < 0.05) return "0.1%未満";
   return `${pct.toFixed(1)}%`;
 }
+
+// --- 広告除外(買い切り課金)。サーバーなし構成のため、Stripe決済リンクで購入→
+// 表示された解除コードを手入力→ハッシュ一致で localStorage に premium フラグを立てる方式。
+// 各アプリの SPEC.md に例外として明記した上で使用する(外部送信は決済リンク遷移のみ・本体は通信しない)。
+const PREMIUM_SUFFIX = ".premium_v1";
+
+/** 広告が外れているか(premium フラグ)。storageKey はアプリの保存キーと揃える(例 "citymap.v1")。 */
+export function isPremium(storageKey: string): boolean {
+  try {
+    return localStorage.getItem(storageKey + PREMIUM_SUFFIX) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** premium フラグを立てる(復元・デバッグ用に直接呼ぶこともある)。 */
+export function setPremium(storageKey: string): void {
+  try {
+    localStorage.setItem(storageKey + PREMIUM_SUFFIX, "1");
+  } catch {
+    // 容量超過等は無視
+  }
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text.trim()));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * 解除コードを検証して premium フラグを立てる。
+ * コード本体はソースに含めず、期待ハッシュ(SHA-256)だけを各アプリ側で env から渡す。
+ */
+export async function redeemPremiumCode(
+  storageKey: string,
+  code: string,
+  expectedHash: string
+): Promise<boolean> {
+  if (!code.trim() || !expectedHash) return false;
+  const hash = await sha256Hex(code);
+  if (hash === expectedHash) {
+    setPremium(storageKey);
+    return true;
+  }
+  return false;
+}

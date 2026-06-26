@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">百名山埋め立てマップ</string>
+    <string name="title_activity_main">百名山埋め立てマップ</string>
+    <string name="package_name">com.adgrky.yamamap</string>
+    <string name="custom_url_scheme">com.adgrky.yamamap</string>
+</resources>

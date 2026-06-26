@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">市区町村ぬりつぶし</string>
+    <string name="title_activity_main">市区町村ぬりつぶし</string>
+    <string name="package_name">com.adgrky.citymap</string>
+    <string name="custom_url_scheme">com.adgrky.citymap</string>
+</resources>

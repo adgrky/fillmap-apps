@@ -1,16 +1,21 @@
 // railmap ルート(SPEC §5.1/§5.2/§5.3/§5.4/§7.1/§7.2/§9)。app層。
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Meta, ThemeColor } from "@fillmap/core";
-import { useRailStore } from "@fillmap/core";
-import { formatRatio, nationalRatio, riddenKm } from "@fillmap/core";
-import { buildStats, checkNewAchievements } from "@fillmap/core";
+import type { Meta, ThemeColor } from "../domain/types";
+import { useRailStore } from "../domain/store";
+import { nationalRatio, riddenKm } from "../domain/progress";
+import { buildStats } from "../domain/achievements";
+import { checkNewAchievements, formatRatio } from "@fillmap/core/generic";
+import { saveData } from "../domain/persistence";
+import { generateShareImage, shareOrDownload } from "../domain/shareImage";
 import { MapView, type AnimateLineCallback, type FlyToCallback, type CaptureMapCallback } from "./MapView";
-import { generateShareImage, shareOrDownload, saveData } from "@fillmap/core";
 import { LineSheet } from "./LineSheet";
 import { StatsPanel } from "./StatsPanel";
 import { AchievementsView } from "./AchievementsView";
 import { AchievementToast } from "./AchievementToast";
 import { SettingsView } from "./SettingsView";
+import { YearTab } from "./YearTab";
+import { AdBanner } from "./AdBanner";
+import { isPremium } from "@fillmap/core/generic";
 import { ACHIEVEMENT_DEFS } from "./achievementDefs";
 import { playPon } from "./sound";
 import { PREF_COORDS } from "./prefCoords";
@@ -23,13 +28,23 @@ const THEME_HEX: Record<ThemeColor, string> = {
   "neon-pink": "#f472b6",
 };
 
-type TabId = "map" | "stats" | "achievements" | "settings";
+// 種別カラー塗り分け(プレミアム)の凡例。MapView.tsx の RAIL_TYPE_COLORS と一致させる。
+const RAIL_TYPE_LEGEND: [string, string][] = [
+  ["新幹線", "#f87171"],
+  ["JR在来線", "#38bdf8"],
+  ["私鉄", "#34d399"],
+  ["地下鉄", "#a78bfa"],
+  ["路面・その他", "#fbbf24"],
+];
+
+type TabId = "map" | "stats" | "yeartab" | "achievements" | "settings";
 
 export function App() {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("map");
+  const [premium, setPremiumState] = useState(() => isPremium("railmap.v1"));
 
   // §7.1 カウントアップ表示
   const [displayRatio, setDisplayRatio] = useState(0);
@@ -69,6 +84,13 @@ export function App() {
   const onAnimateRef = useCallback((fn: AnimateLineCallback)  => { animateFnRef.current = fn; }, []);
   const onFlyToRef   = useCallback((fn: FlyToCallback)        => { flyToFnRef.current   = fn; }, []);
   const onCaptureRef = useCallback((fn: CaptureMapCallback)   => { captureFnRef.current  = fn; }, []);
+
+  // native の購入/復元が検証されたら premium を反映(main.tsx が発火)
+  useEffect(() => {
+    const onUnlocked = () => setPremiumState(true);
+    window.addEventListener("railmap:premium-unlocked", onUnlocked);
+    return () => window.removeEventListener("railmap:premium-unlocked", onUnlocked);
+  }, []);
 
   useEffect(() => {
     fetch(`${BASE}data/meta.json`)
@@ -134,8 +156,8 @@ export function App() {
     const mapCanvas = await captureFnRef.current();
     const blob = await generateShareImage({
       mapCanvas,
-      nationalRatio: nationalRatio(meta, data.rides),
-      riddenKm: riddenKm(meta, data.rides),
+      meta,
+      rides: data.rides,
       themeColor,
       achievementName,
     });
@@ -158,6 +180,7 @@ export function App() {
         <MapView
           riddenIds={riddenIds}
           themeColor={themeColor}
+          premium={premium}
           selectedLineId={selectedLineId}
           onSelectLine={setSelectedLineId}
           onAnimateRef={onAnimateRef}
@@ -174,6 +197,16 @@ export function App() {
               </span>
               <span className="tnum text-text-dim">{km.toFixed(1)} km</span>
             </div>
+            {premium && (
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-text-dim">
+                {RAIL_TYPE_LEGEND.map(([label, hex]) => (
+                  <span key={label} className="flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-full" style={{ background: hex }} />
+                    {label}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
               <div
                 className="h-full rounded-full transition-[width] duration-300"
@@ -207,6 +240,21 @@ export function App() {
         </div>
       )}
 
+      {/* 年表(振り返り。citymap YearTab と同様の年月別一覧) */}
+      {tab === "yeartab" && meta && (
+        <div className="absolute inset-0">
+          <YearTab
+            meta={meta}
+            rides={data.rides}
+            themeColor={themeColor}
+            onSelect={(lineId) => {
+              setTab("map");
+              setSelectedLineId(lineId);
+            }}
+          />
+        </div>
+      )}
+
       {/* 称号(§5.4) */}
       {tab === "achievements" && (
         <div className="absolute inset-0">
@@ -225,9 +273,12 @@ export function App() {
       {/* 設定(§5.5) */}
       {tab === "settings" && (
         <div className="absolute inset-0">
-          <SettingsView />
+          <SettingsView premium={premium} onPremiumUnlocked={() => setPremiumState(true)} />
         </div>
       )}
+
+      {/* 広告バナー(premium購入済み、または地図タブ=コア体験中は非表示) */}
+      <AdBanner hidden={premium || tab === "map"} />
 
       {/* §7.2 称号解除トースト */}
       <AchievementToast
@@ -247,6 +298,7 @@ export function App() {
           [
             ["map",          "🗾", "地図"],
             ["stats",        "📊", "統計"],
+            ["yeartab",      "📅", "年表"],
             ["achievements", "🏆", "称号"],
             ["settings",     "⚙️", "設定"],
           ] as [TabId, string, string][]

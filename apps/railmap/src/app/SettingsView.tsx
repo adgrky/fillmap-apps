@@ -1,11 +1,20 @@
 // 設定画面(SPEC §5.5)。app層。
 import { useRef, useState } from "react";
-import type { ThemeColor } from "@fillmap/core";
-import { exportData, parseImported } from "@fillmap/core";
-import { useRailStore } from "@fillmap/core";
-import { createInitialData } from "@fillmap/core";
+import type { ThemeColor } from "../domain/types";
+import { exportData, parseImported, createInitialData } from "../domain/persistence";
+import { useRailStore } from "../domain/store";
+import { redeemPremiumCode } from "@fillmap/core/generic";
+import { isNativeApp, purchasePremium, restorePurchases } from "@fillmap/core";
 
 const APP_VERSION = "0.2.0"; // Phase2
+
+const STRIPE_LINK = import.meta.env.VITE_STRIPE_PAYMENT_LINK as string | undefined;
+const UNLOCK_HASH = import.meta.env.VITE_UNLOCK_CODE_HASH as string | undefined;
+
+type Props = {
+  premium: boolean;
+  onPremiumUnlocked: () => void;
+};
 
 const THEMES: { color: ThemeColor; label: string; hex: string }[] = [
   { color: "neon-blue",  label: "ネオンブルー",  hex: "#38bdf8" },
@@ -13,12 +22,29 @@ const THEMES: { color: ThemeColor; label: string; hex: string }[] = [
   { color: "neon-pink",  label: "ネオンピンク",   hex: "#f472b6" },
 ];
 
-export function SettingsView() {
+export function SettingsView({ premium, onPremiumUnlocked }: Props) {
   const data = useRailStore((s) => s.data);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState(false);
   const [clearStep, setClearStep] = useState<0 | 1 | 2>(0); // 0=通常 1=確認 2=再確認
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleRedeem = async () => {
+    setCodeError(null);
+    if (!UNLOCK_HASH) {
+      setCodeError("現在準備中です。");
+      return;
+    }
+    const ok = await redeemPremiumCode("railmap.v1", code, UNLOCK_HASH);
+    if (ok) {
+      onPremiumUnlocked();
+      setCode("");
+    } else {
+      setCodeError("コードが正しくありません。");
+    }
+  };
 
   const setTheme = (theme: ThemeColor) =>
     useRailStore.setState((s) => ({ data: { ...s.data, settings: { ...s.data.settings, theme } } }));
@@ -169,6 +195,67 @@ export function SettingsView() {
               <button onClick={() => setClearStep(0)} className="w-full rounded-lg bg-surface-2 py-3 text-sm text-text-dim hover:bg-surface-2/70">
                 キャンセル
               </button>
+            </div>
+          )}
+        </section>
+
+        {/* 広告除外(買い切り) */}
+        <section className="rounded-token bg-surface p-4">
+          <h2 className="mb-1 text-sm font-semibold text-text-dim">広告除外</h2>
+          {premium ? (
+            <p className="rounded-lg bg-accent-green/10 p-3 text-sm text-accent-green">
+              購入済みです。広告は表示されません。
+            </p>
+          ) : isNativeApp() ? (
+            <div className="space-y-2">
+              <p className="text-sm text-text-dim">
+                買い切りで広告を非表示にし、プレミアム機能(種別カラー塗り分け)を解放できます。
+              </p>
+              <button
+                onClick={() => purchasePremium()}
+                className="block w-full rounded-lg bg-accent-blue py-3 text-center text-sm font-semibold text-bg"
+              >
+                💳 広告を削除する(買い切り)
+              </button>
+              <button
+                onClick={() => restorePurchases()}
+                className="block w-full rounded-lg bg-surface-2 py-3 text-center text-sm font-semibold text-text hover:bg-surface-2/70"
+              >
+                購入を復元する
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-text-dim">
+                買い切りで広告を非表示にできます。決済ページで購入後に表示されるコードをここに入力してください。
+              </p>
+              {STRIPE_LINK ? (
+                <a
+                  href={STRIPE_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full rounded-lg bg-surface-2 py-3 text-center text-sm font-semibold text-text hover:bg-surface-2/70"
+                >
+                  💳 広告を削除する(買い切り)
+                </a>
+              ) : (
+                <p className="rounded-lg bg-surface-2 p-3 text-xs text-text-dim">準備中です。</p>
+              )}
+              <div className="flex gap-2">
+                <input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="解除コードを入力"
+                  className="flex-1 rounded-lg bg-surface-2 px-3 py-2 text-sm text-text outline-none"
+                />
+                <button
+                  onClick={handleRedeem}
+                  className="rounded-lg bg-accent-blue px-4 py-2 text-sm font-semibold text-bg"
+                >
+                  適用
+                </button>
+              </div>
+              {codeError && <p className="text-xs text-danger">{codeError}</p>}
             </div>
           )}
         </section>

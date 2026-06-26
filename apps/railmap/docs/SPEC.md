@@ -8,12 +8,12 @@
 
 | 項目 | 内容 |
 |---|---|
-| アプリ名(仮) | 路線埋め立てマップ(コード名: railmap) |
+| アプリ名 | 塗り鉄 - 全国鉄道乗りつぶしマップ(コード名: railmap、2026-06-25確定) |
 | 一言コンセプト | 乗った路線が光る、自分だけの日本地図を育てるアプリ |
 | ターゲット | 鉄道好き・旅行好き・乗りつぶし勢(Xの鉄道クラスタ) |
 | 差別化 | ①塗る瞬間の快感(発光・アニメ)②シェアしたくなる美しい画像 ③データ完全ローカルの安心感 |
 | 維持費 | 0円(静的サイト+localStorage。サーバー・DB・APIキー一切なし) |
-| 収益化(将来) | TWA化して Play Store 買い切り。Phase 4 で検討、本書スコープ外 |
+| 収益化 | Capacitor でネイティブアプリ化し Google Play 配信。無料版=AdMob広告 / 買い切り(¥300-600)で広告除去+プレミアム機能(種別カラー塗り分け)。詳細は §14 |
 | 横展開 | 本アプリの「地図塗りエンジン」を百名山版・道の駅版等に流用する。汎用化を意識した分離設計とする(§2) |
 
 ### 絶対原則(全フェーズ共通)
@@ -22,6 +22,14 @@
 - ユーザーデータは localStorage のみ。スキーマには必ず `version` を持たせる
 - ライブラリ追加は本書記載のもののみ。追加したい場合は実装前に提案・承認を得る
 - 全コミュニケーション・コード内コメントは日本語
+
+### 例外: 広告・買い切り課金(2026-06-19 決定 → 2026-06-25 Capacitor方針へ改訂)
+
+収益化のため以下のみ例外的に許可する(他は引き続き「外部送信なし」を維持。詳細仕様は §14):
+- **アプリ版(Capacitor/native)**: Google AdMob バナー広告。広告SDKが端末の広告ID等を収集・外部送信する(「外部送信なし」原則の明示的例外)。買い切りは Google Play 公式の課金(買い切りIAP)で行い、購入状態の復元に対応する。
+- **Web版(GitHub Pages)**: 従来どおり Google AdSense バナー(`VITE_ADSENSE_CLIENT`/`VITE_ADSENSE_SLOT` 未設定時は非表示)。買い切りは Stripe決済リンク+解除コード手入力(SHA-256)を継続。
+- 広告/課金は `packages/core` のファサード(`ads.ts`/`iap.ts`)経由で `Capacitor.isNativePlatform()` により出し分ける。premium 判定は両プラットフォーム共通で `@fillmap/core` の `isPremium("railmap.v1")` を単一情報源とする。
+- **重要**: AdMob 導入によりプライバシーポリシー(広告ID収集あり)と Play データセーフティ回答(収集あり)を必ず整合させる。
 
 ---
 
@@ -159,7 +167,13 @@ type SaveData = {
 
 ## §5. 画面仕様
 
-SPA・モバイルファースト(基準幅 390px)。画面は4つ+1モーダル。下部タブバーで切替: 🗾地図 / 📊統計 / 🏆称号 / ⚙️設定
+SPA・モバイルファースト(基準幅 390px)。画面は5つ+1モーダル。下部タブバーで切替: 🗾地図 / 📊統計 / 📅年表 / 🏆称号 / ⚙️設定
+
+### 5.x 年表画面(2026-06-19 追加。citymap YearTab と同設計)
+
+- 乗車済路線を `firstDate` の年→月の二階層でグループ表示(年=見出し、月=小見出し)。日付未入力は「日付不明」セクションへ
+- 路線タップ→地図タブに切替+該当路線のボトムシートを表示
+- 記録が0件の場合「路線をタップして乗車を記録しよう」を表示
 
 ### 5.1 地図画面(メイン)
 
@@ -339,9 +353,10 @@ SPA・モバイルファースト(基準幅 390px)。画面は4つ+1モーダル
 - 区間塗り(`status:"partial"`、segIdx 単位トグル)— Phase 2 の反応を見てから着手判断
 - 受け入れ条件: 公開URLでフル動作、X でカード表示確認
 
-### Phase 4(本書スコープ外・メモのみ)
+### Phase 4: ストア配信(Capacitor化)← §14 で本書スコープ内に格上げ
 
-- TWA化 / Play Store / プレミアム(廃線データ・詳細統計)/ 百名山版へのエンジン流用
+- Capacitor で Android アプリ化 → Google Play 配信 / AdMob 広告 / 買い切りIAP / プレミアム機能(種別カラー塗り分け)
+- 共通のストア化レールは packages/core(ads.ts/iap.ts)+ docs/STORE_PIPELINE.md に集約し、他アプリへ横展開する
 
 ---
 
@@ -354,6 +369,43 @@ SPA・モバイルファースト(基準幅 390px)。画面は4つ+1モーダル
 - [ ] 出典表記あり(国土数値情報 / OpenFreeMap / © OpenStreetMap contributors)
 - [ ] console にエラー・警告ゼロ
 - [ ] 達成率の手計算検証: 任意の3路線を塗り、meta.json の距離合計と表示%が一致
+
+---
+
+## §14. ストア配信・収益化仕様(Capacitor / 2026-06-25 確定)
+
+railmap を Android アプリとして Google Play で配信する。本章で確立した構成を `packages/core` のファサードと `docs/STORE_PIPELINE.md`(モノレポ共通手順書)に集約し、他アプリ(citymap 等)へ横展開する。
+
+### 14.1 配信方式
+- **Capacitor** で Web 資産(`dist/`)をネイティブシェルに包む。`appId = com.adgrky.railmap`、`appName = 塗り鉄`(ランチャー表示名。Play掲載タイトルは「塗り鉄 - 全国鉄道乗りつぶしマップ」)、`webDir = dist`。
+- iOS は本書スコープ外(将来 `npx cap add ios` で追加可能な設計のみ残す)。
+
+### 14.2 ビルド出し分け(vite.config.ts)
+- 環境変数 `CAP_BUILD=1` のとき: `base = "/"`(ネイティブは localhost ルート配信)、**PWA(Service Worker)を無効化**(WebView 内 SW が AdMob/課金と干渉する既知問題の回避)。
+- 未設定(Web版)のとき: 従来どおり `base = "./"` + vite-plugin-pwa 有効。
+- フロー: `npm run build:app`(=`CAP_BUILD=1 vite build`) → `npx cap sync android` → `gradle bundleRelease`。
+
+### 14.3 広告(AdMob / native のみ)
+- `packages/core/src/ads.ts` のファサード(`initAds/showBanner/hideBanner`)経由。native は `@capacitor-community/admob` を動的 import、Web は AdBanner の AdSense が担当。
+- **地図タブ(コア体験)は広告ゼロの聖域**。既存の `<AdBanner hidden={premium || tab==="map"} />` のロジックをそのまま native の show/hide に反映。
+- 広告ユニットIDは env(`VITE_ADMOB_BANNER`)。**AdMob アプリID は AndroidManifest に直書き**(ビルド時固定、env 埋め込み不可)。実装・検証はテスト広告ID(`ca-app-pub-3940256099942544/...`)で行う。
+
+### 14.4 買い切り課金(Google Play / native)
+- `packages/core/src/iap.ts` のファサード(`initIap/purchasePremium/restorePurchases`)経由。プラグインは **cordova-plugin-purchase**(買い切り NON_CONSUMABLE・端末内検証・サーバーレス)。
+- productId は railmap 固有(例 `railmap.premium`)。購入検証成功 → `setPremium("railmap.v1")`。アンインストール後は `restorePurchases()` で復元。
+- 設定画面は `Capacitor.isNativePlatform()` で分岐: native=「広告を削除(買い切り)」「購入を復元」ボタン(Stripe リンク/コード欄は非表示=Play 課金以外をアプリ内に出すとポリシー違反)。Web=従来の Stripe+コード方式。
+- premium 判定は両プラットフォーム共通で `isPremium("railmap.v1")`。
+
+### 14.5 プレミアム機能(買い切りで解放)
+- **種別カラー塗り分けモード**: 新幹線/JR/私鉄/地下鉄ごとに塗り色を変える。無料版は単色グロー(テーマ色)。app 層(MapView)で `premium` により分岐。
+
+### 14.6 署名・ストアアセット
+- 署名鍵: iCloud `android-keys/railmap.keystore`(alias 等は同フォルダ README.txt 参照)。`applicationId` を `com.adgrky.railmap` に一致させる。`key.properties` は gitignore。
+- アセット: アプリアイコン512(`pwa-512x512.png`流用)/ アダプティブアイコン(`maskable-icon-512x512.png`から生成)/ フィーチャーグラフィック1024×500(新規)/ スクショ最低2枚 / プライバシーポリシー(**広告ID収集ありに更新**)。
+- Play データセーフティ: 広告ID=収集あり / 位置情報=端末内のみ(送信なし) / アプリ内課金=あり。**虚偽申告はアプリ削除リスク**。
+
+### 14.7 横展開
+- 他アプリへの差分は理想的に **appId / AdMob 広告ユニット / productId / 掲載文の4点**のみ。`tools/add_capacitor.py` で定型生成、手順は `docs/STORE_PIPELINE.md`。ads/iap の API は2本目(citymap)適用時に差分を確認してからフリーズ(早すぎる抽象化の回避=00_master §7-2)。
 
 ---
 

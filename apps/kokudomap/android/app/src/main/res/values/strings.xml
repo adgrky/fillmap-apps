@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">国道完全制覇マップ</string>
+    <string name="title_activity_main">国道完全制覇マップ</string>
+    <string name="package_name">com.adgrky.kokudomap</string>
+    <string name="custom_url_scheme">com.adgrky.kokudomap</string>
+</resources>

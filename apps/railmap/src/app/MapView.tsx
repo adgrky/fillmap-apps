@@ -44,6 +44,29 @@ async function buildDarkStyle(): Promise<StyleSpecification> {
 
 /** themeColor の hex を rgba(r,g,b,alpha) に変換(グロー用)。 */
 
+// 種別カラー塗り分け(プレミアム機能。SPEC §14.5)。railType ごとの固定配色。
+const RAIL_TYPE_COLORS: Record<string, string> = {
+  "新幹線": "#f87171",
+  "JR在来線": "#38bdf8",
+  "私鉄": "#34d399",
+  "地下鉄": "#a78bfa",
+  "路面・その他": "#fbbf24",
+};
+
+/** 乗車済レイヤーの色式。premium時は railType ごとの色、無料時は単色(テーマ色)。 */
+function riddenColorExpr(themeColor: string, premium: boolean): maplibregl.ExpressionSpecification | string {
+  if (!premium) return themeColor;
+  return [
+    "match", ["get", "railType"],
+    "新幹線", RAIL_TYPE_COLORS["新幹線"],
+    "JR在来線", RAIL_TYPE_COLORS["JR在来線"],
+    "私鉄", RAIL_TYPE_COLORS["私鉄"],
+    "地下鉄", RAIL_TYPE_COLORS["地下鉄"],
+    "路面・その他", RAIL_TYPE_COLORS["路面・その他"],
+    themeColor,
+  ] as maplibregl.ExpressionSpecification;
+}
+
 export type AnimateLineCallback = (lineId: string, onComplete: () => void) => void;
 export type FlyToCallback = (center: [number, number], zoom?: number) => void;
 export type CaptureMapCallback = () => Promise<HTMLCanvasElement>;
@@ -51,6 +74,8 @@ export type CaptureMapCallback = () => Promise<HTMLCanvasElement>;
 type Props = {
   riddenIds: string[];
   themeColor: string;
+  /** 買い切り解放時: 種別(新幹線/JR/私鉄/地下鉄等)ごとの色分け。SPEC §14.5。 */
+  premium?: boolean;
   selectedLineId: string | null;
   onSelectLine: (lineId: string | null) => void;
   onAnimateRef?: (fn: AnimateLineCallback) => void;
@@ -58,7 +83,7 @@ type Props = {
   onCaptureRef?: (fn: CaptureMapCallback) => void;
 };
 
-export function MapView({ riddenIds, themeColor, selectedLineId, onSelectLine, onAnimateRef, onFlyToRef, onCaptureRef }: Props) {
+export function MapView({ riddenIds, themeColor, premium = false, selectedLineId, onSelectLine, onAnimateRef, onFlyToRef, onCaptureRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const loadedRef = useRef(false);
@@ -107,7 +132,7 @@ export function MapView({ riddenIds, themeColor, selectedLineId, onSelectLine, o
           type: "line",
           source: "lines",
           paint: {
-            "line-color": themeColor,
+            "line-color": riddenColorExpr(themeColor, premium),
             "line-width": 6,
             "line-opacity": 0,    // アニメ完了時に 0.4 へフェードイン
             "line-blur": 4,
@@ -116,21 +141,14 @@ export function MapView({ riddenIds, themeColor, selectedLineId, onSelectLine, o
           filter: ["in", ["get", "lineId"], ["literal", []]],
         });
 
-        // 乗車済本線(line-gradient 対応層。lineMetrics:true が必要)
+        // 乗車済本線(premium時は railType ごとの色分け。SPEC §14.5)
         map.addLayer({
           id: "lines-visited",
           type: "line",
           source: "lines",
           paint: {
-            "line-color": themeColor,
+            "line-color": riddenColorExpr(themeColor, premium),
             "line-width": 2.5,
-            "line-gradient": [
-              "interpolate",
-              ["linear"],
-              ["line-progress"],
-              0, themeColor,
-              1, themeColor,
-            ],
           },
           layout: { "line-cap": "round", "line-join": "round" },
           filter: ["in", ["get", "lineId"], ["literal", []]],
@@ -180,7 +198,7 @@ export function MapView({ riddenIds, themeColor, selectedLineId, onSelectLine, o
         });
 
         loadedRef.current = true;
-        applyRidden(map, riddenIds, themeColor);
+        applyRidden(map, riddenIds, themeColor, premium);
         applySelected(map, selectedLineId);
 
         // アニメーション関数を親に渡す(§7.1)
@@ -253,8 +271,8 @@ export function MapView({ riddenIds, themeColor, selectedLineId, onSelectLine, o
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map && loadedRef.current) applyRidden(map, riddenIds, themeColor);
-  }, [riddenIds, themeColor]);
+    if (map && loadedRef.current) applyRidden(map, riddenIds, themeColor, premium);
+  }, [riddenIds, themeColor, premium]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -264,13 +282,14 @@ export function MapView({ riddenIds, themeColor, selectedLineId, onSelectLine, o
   return <div ref={containerRef} className="absolute inset-0" />;
 }
 
-function applyRidden(map: maplibregl.Map, riddenIds: string[], themeColor: string) {
+function applyRidden(map: maplibregl.Map, riddenIds: string[], themeColor: string, premium: boolean) {
   const filter = ["in", ["get", "lineId"], ["literal", riddenIds]] as maplibregl.FilterSpecification;
   map.setFilter("lines-glow", filter);
   map.setFilter("lines-visited", filter);
   map.setFilter("lines-unvisited", ["!", filter] as maplibregl.FilterSpecification);
-  map.setPaintProperty("lines-glow", "line-color", themeColor);
-  // visited は line-gradient で色を持つため line-color 更新は不要
+  const color = riddenColorExpr(themeColor, premium);
+  map.setPaintProperty("lines-glow", "line-color", color);
+  map.setPaintProperty("lines-visited", "line-color", color);
 }
 
 function applySelected(map: maplibregl.Map, selectedLineId: string | null) {

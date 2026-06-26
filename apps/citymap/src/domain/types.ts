@@ -17,6 +17,19 @@ export type CityInfo = {
   isIsland?: boolean;
 };
 
+/** 消滅自治体1件(プレミアム機能, §11)。tools/curate_dissolved.py が生成。 */
+export type DissolvedMunicipality = {
+  id: string;
+  pref: string;
+  name: string;
+  county: string | null;
+  gapeiDate: string;
+  mergedInto: string;
+  succId: string;
+  lng: number;
+  lat: number;
+};
+
 /** 1自治体の訪問記録(§E4 visits)。 */
 export type Visit = {
   level: number; // 0-5(0は未踏=visits から削除)

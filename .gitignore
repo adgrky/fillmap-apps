@@ -3,6 +3,9 @@ dist/
 dist-ssr/
 *.local
 .DS_Store
+# 広告/決済の実IDを含むため(.env.example は対象外)
+.env
+!.env.example
 # データ前処理(配布物に含めない)
 **/tools/raw/
 **/tools/__pycache__/

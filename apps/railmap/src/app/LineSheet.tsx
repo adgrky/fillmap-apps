@@ -1,5 +1,5 @@
 // 路線タップ時のボトムシート(SPEC §5.2 のうち Phase1: 乗った!/取り消し)。app層。
-import type { LineMeta } from "@fillmap/core";
+import type { LineMeta } from "../domain/types";
 
 type Props = {
   lineId: string;

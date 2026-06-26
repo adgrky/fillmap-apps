@@ -7,13 +7,14 @@ export type LevelDef = {
   color: string; // 地図塗り色
 };
 
+// 隣接レベルの彩度/色相を変えて視認性を確保(単色グラデは見分けがつかないため §バグ修正)。
 export const LEVELS: LevelDef[] = [
   { level: 0, label: "未踏", color: "#1a1f2a" },
-  { level: 1, label: "通過した", color: "#0e7490" },
-  { level: 2, label: "降り立った", color: "#0891b2" },
-  { level: 3, label: "歩いた", color: "#06b6d4" },
-  { level: 4, label: "泊まった", color: "#22d3ee" },
-  { level: 5, label: "住んだ", color: "#67e8f9" },
+  { level: 1, label: "通過した", color: "#3b82f6" },
+  { level: 2, label: "降り立った", color: "#10b981" },
+  { level: 3, label: "歩いた", color: "#eab308" },
+  { level: 4, label: "泊まった", color: "#f97316" },
+  { level: 5, label: "住んだ", color: "#ef4444" },
 ];
 
 export const MAX_LEVEL = 5;

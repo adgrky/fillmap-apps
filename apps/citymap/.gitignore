@@ -1,0 +1,11 @@
+# Capacitor / Android ネイティブ生成物・秘匿情報(SPEC §14.6)
+/android/.gradle
+/android/build
+/android/app/build
+/android/captures
+/android/local.properties
+/android/.idea
+/android/app/release
+*.keystore
+*.jks
+key.properties
