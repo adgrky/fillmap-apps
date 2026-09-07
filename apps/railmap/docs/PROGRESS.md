@@ -61,3 +61,8 @@
 - 計測(GoatCounter)は VITE_GOATCOUNTER_CODE 未設定によりビルド成果物に含まれず(dist の JS で "goatcounter" 0件) → 申告は広告IDのみで実態と一致。
 - 広告IDの使用は .aab の権限宣言で確定: `com.google.android.gms.permission.AD_ID` / `android.permission.ACCESS_ADSERVICES_AD_ID`。データ種類は「デバイスまたはその他のID」(公式ヘルプで確認。「アプリのアクティビティ」ではない)。
 - アカウント作成機能なし → アカウント関連の申告は「該当なし」。
+
+## 2026-09-07 versionCode を 2 へ
+- 完了: 内部テストに versionCode 1 をアップロード済みのため、クローズドテストへ同一ファイルを上げると「バージョンコード1はすでに使用されています」で弾かれる。本来はリリースのプロモートで移すが、UI操作が分かりにくかったため versionCode を 2 に上げて再ビルド(署名確認済・manifest で versionCode="2" を確認)。
+- 決定: 以降のトラック追加・更新は versionCode を必ず +1 する。内部テスト=1、クローズドテスト=2。
+- 残課題: クローズドテストのテスターリスト(12人)の登録。集まった日から14日のカウント開始。
