@@ -134,7 +134,7 @@ def main() -> None:
             "lineName": str(first["lineName"]),
             "lengthKm": length_km,
             "railType": str(first["railType"]),
-            "pref": [],  # Phase 2 で N03 交差により付与(SPEC §3.2 / §8.1)
+            "pref": [],  # N03交差で後付与(tools/add_pref.py。SPEC §3.2 / §8.1)
         }
 
     # 各 feature に segIdx を付与して lines.geojson を構築

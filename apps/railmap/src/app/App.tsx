@@ -16,6 +16,7 @@ import { SettingsView } from "./SettingsView";
 import { YearTab } from "./YearTab";
 import { AdBanner } from "./AdBanner";
 import { isPremium } from "@fillmap/core/generic";
+import { onBannerHeightChange } from "@fillmap/core";
 import { ACHIEVEMENT_DEFS } from "./achievementDefs";
 import { playPon } from "./sound";
 import { PREF_COORDS } from "./prefCoords";
@@ -52,6 +53,15 @@ export function App() {
 
   // §7.2 トースト
   const [toastName, setToastName] = useState<string | null>(null);
+
+  // AdMob バナーはネイティブ層に描画され WebView の上に重なる。実高さを購読し、
+  // その分だけタブバーと各パネルの下端を持ち上げないとタブが覆われて押せない(SPEC §14.3)。
+  const [adHeight, setAdHeight] = useState(0);
+  useEffect(() => {
+    let dispose: (() => void) | undefined;
+    void onBannerHeightChange(setAdHeight).then((d) => { dispose = d; });
+    return () => dispose?.();
+  }, []);
 
   const data = useRailStore((s) => s.data);
   const toggleRide = useRailStore((s) => s.toggleRide);
@@ -188,7 +198,9 @@ export function App() {
           onCaptureRef={onCaptureRef}
         />
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 p-3">
+        {/* Android 15+ は edge-to-edge が既定。safe-area を足さないと
+            ステータスバー(時刻/電池)と達成率バーが重なる。 */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
           <div className="mx-auto max-w-md rounded-token bg-surface/90 px-4 py-2 backdrop-blur">
             <div className="flex items-baseline justify-between text-sm">
               <span className="text-text-dim">
@@ -229,7 +241,7 @@ export function App() {
 
       {/* 統計(§5.3) */}
       {tab === "stats" && meta && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-x-0 top-0" style={{ bottom: adHeight }}>
           <StatsPanel
             meta={meta}
             rides={data.rides}
@@ -242,7 +254,7 @@ export function App() {
 
       {/* 年表(振り返り。citymap YearTab と同様の年月別一覧) */}
       {tab === "yeartab" && meta && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-x-0 top-0" style={{ bottom: adHeight }}>
           <YearTab
             meta={meta}
             rides={data.rides}
@@ -257,7 +269,7 @@ export function App() {
 
       {/* 称号(§5.4) */}
       {tab === "achievements" && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-x-0 top-0" style={{ bottom: adHeight }}>
           <AchievementsView
             defs={ACHIEVEMENT_DEFS}
             unlocked={data.unlockedAchievements}
@@ -272,7 +284,7 @@ export function App() {
 
       {/* 設定(§5.5) */}
       {tab === "settings" && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-x-0 top-0" style={{ bottom: adHeight }}>
           <SettingsView premium={premium} onPremiumUnlocked={() => setPremiumState(true)} />
         </div>
       )}
@@ -293,7 +305,8 @@ export function App() {
         </div>
       )}
 
-      <nav className="absolute inset-x-0 bottom-0 z-30 flex border-t border-surface-2 bg-surface">
+      {/* 下端も同様。ジェスチャーバーとタブラベルの重なりを避ける。 */}
+      <nav style={{ bottom: adHeight }} className="absolute inset-x-0 z-30 flex border-t border-surface-2 bg-surface pb-[env(safe-area-inset-bottom)]">
         {(
           [
             ["map",          "🗾", "地図"],

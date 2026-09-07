@@ -96,7 +96,7 @@ export function SettingsView({ premium, onPremiumUnlocked }: Props) {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-bg pb-20">
+    <div className="h-full overflow-y-auto bg-bg pb-20 pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-md space-y-4 p-4">
 
         {/* テーマカラー選択 */}

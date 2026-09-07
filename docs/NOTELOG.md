@@ -157,3 +157,8 @@
 | 2026-09-07 | citymap/kokudomap/michimap/yamamap | プライバシーポリシー4本公開 | `public/privacy.html`が未コミットのまま放置されていたためpush。GitHub Actionsのビルドを経て`https://adgrky.github.io/<app>/privacy.html`で200を確認。各PLAY_LISTING_DRAFTのURL欄を「要発行」から実URLへ更新。 | Pages公開の仕組みは4本とも生きていた。止まっていたのはpushだけ。 |
 | 2026-09-07 | railmap | 掲載文と実装の不一致を修正 | 詳しい説明の「都道府県別・路線種別の達成率」のうち、都道府県別は`meta.json`の`pref`が全て`[]`で未実装。StatsPanelにも「都道府県データは Phase 2 で追加予定」が実画面に露出。掲載文から都道府県別を削除し路線種別のみに。 | 掲載文が実機能を上回るとストア審査リスク。画面内の開発用語露出は要対処(ケン判断待ち)。 |
 | 2026-09-07 | railmap | スクショのPlay要件違反を修正 | 1080x2400は「長辺が短辺の2倍以内」に違反しアップロード時に弾かれる。左右に背景色パディングして1200x2400(比2.0)へ。積立カレンダー8枚も同様に修正。 | 公式ヘルプで要件を確認。9:16は推奨であり必須ではないが、2倍以内は必須。 |
+
+| 2026-09-07 | railmap | 都道府県別データを実装 | N03全国版は611MBで空きディスク3.2GBを圧迫するため、都道府県別(各数MB〜)を1件ずつDL→ポリゴン化→即削除する方式に。597路線全てに付与、47県カバー。既知路線3本で検算一致。 | 全国版一括DLは空き容量を見てから判断する。 |
+| 2026-09-07 | railmap | ステータスバー重なりを修正 | Android 15+ は edge-to-edge が既定。viewport-fit=cover はあったが env(safe-area-inset-*) 未使用で、時刻表示と達成率バーが重なっていた。上部バーと下部nav・全パネルに safe-area を追加。 | 6月撮影のスクショはこの不具合が写ったまま提出直前だった。 |
+| 2026-09-07 | railmap | 広告がタブバーを覆う問題を修正 | AdMobバナーはネイティブ層に描画されタブが押せない状態だった。showBanner の margin で試みたが無効: `int densityMargin = (int)(adOptions.margin * density);` の後に Android 15+ 用 WindowInsets リスナーが `setMargins(0,0,0,bottomInset)` で上書きしていた(BannerExecutor.java)。バナー実高さを購読して nav/パネルの bottom を上げる方式で解決。📷 | プラグインの margin は Android 15+ で信用できない。 |
+| 2026-09-07 | fillmap-apps | dev サーバーの参照先ずれを修正 | `npm run dev -w railmap` が PATH 解決に失敗し `~/Downloads/線路アプリ/node_modules/.bin/vite` を起動していた(sh: vite: command not found の後、古いプロジェクトを配信)。launch.json を `npm exec -w <app> -- vite apps/<app>` 方式へ変更。 | 修正が反映されない時はサーバーの実行体を lsof/ps で確認する。 |

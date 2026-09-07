@@ -3,8 +3,8 @@ import type { Meta, RailType, SaveData } from "../domain/types";
 import { conversionText, railTypeRatio, riddenKm } from "../domain/progress";
 import { formatRatio } from "@fillmap/core/generic";
 
-// §8.1 注: 都道府県データは Phase 2 時点で pref:[] のため都道府県グリッドは距離0で描画。
-// 都道府県別集計の精緻化は Phase 2 残課題(PROGRESS.md)。
+// §8.1 都道府県別: meta.lines[].pref は N03(行政区域)との交差で付与済み
+// (tools/add_pref.py)。県境をまたぐ路線は全長を両県に計上する近似(画面に明記)。
 
 const RAIL_TYPE_LABELS: [RailType, string][] = [
   ["新幹線",     "🚅 新幹線"],
@@ -59,7 +59,7 @@ export function StatsPanel({ meta, rides, themeColor, onJumpToPref, onOpenShare 
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-bg pb-20">
+    <div className="h-full overflow-y-auto bg-bg pb-20 pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-md space-y-4 p-4">
 
         {/* ヒーローカード(§5.3 1.) */}
@@ -120,11 +120,6 @@ export function StatsPanel({ meta, rides, themeColor, onJumpToPref, onOpenShare 
               );
             })}
           </div>
-          {Object.keys(prefTotal).length === 0 && (
-            <p className="mt-2 text-center text-xs text-text-dim">
-              都道府県データは Phase 2 で追加予定
-            </p>
-          )}
         </div>
 
         {/* シェアボタン(§5.3 4.) */}

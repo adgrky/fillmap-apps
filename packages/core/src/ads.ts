@@ -40,6 +40,29 @@ export async function showBanner(): Promise<void> {
   });
 }
 
+/**
+ * バナーの実高さ(dp)の変化を購読する(native時のみ)。0 = 非表示。
+ * バナーはネイティブ層に描画され WebView の上に重なるため、この高さぶん
+ * アプリ側の下端(タブバー等)を持ち上げないとタブが覆われて押せなくなる。
+ * showBanner の margin では解決しない: プラグインは Android 15+ で
+ * WindowInsets リスナーにより margin を上書きするため(BannerExecutor.java)。
+ */
+export async function onBannerHeightChange(
+  cb: (heightDp: number) => void,
+): Promise<() => void> {
+  if (!isNativeApp()) return () => {};
+  const { AdMob, BannerAdPluginEvents } = await import("@capacitor-community/admob");
+  const handles = await Promise.all([
+    AdMob.addListener(BannerAdPluginEvents.SizeChanged, (info: { height: number }) =>
+      cb(info.height ?? 0),
+    ),
+    AdMob.addListener(BannerAdPluginEvents.Closed, () => cb(0)),
+  ]);
+  return () => {
+    for (const h of handles) void h.remove();
+  };
+}
+
 /** バナーを隠す(native時のみ)。地図タブ=聖域や premium 時に呼ぶ。 */
 export async function hideBanner(): Promise<void> {
   if (!isNativeApp()) return;

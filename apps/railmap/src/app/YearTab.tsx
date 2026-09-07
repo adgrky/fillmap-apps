@@ -100,7 +100,7 @@ export function YearTab({ meta, rides, themeColor, onSelect }: Props) {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-bg pb-20">
+    <div className="h-full overflow-y-auto bg-bg pb-20 pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-md space-y-6 p-4">
         {groups.map(({ year, months }) => (
           <section key={year}>
