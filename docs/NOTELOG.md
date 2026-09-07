@@ -151,3 +151,5 @@
 - やったこと: citymap消滅自治体・kokudomap国道タグ・michimap地方カラー・yamamap二百三百名山を、エミュレータの代わりにdevサーバ+preview_evalでmaplibreのqueryRenderedFeatures/projectを使い正確な座標をクリックして全機能の見た目とシート表示を確認。4アプリ全てtsc --noEmitもクリーン
 - 詰まり: ピクセル座標の当てクリックでは細い国道線・小さい点に当たらず外れ続けた→map.queryRenderedFeaturesで対象フィーチャの座標を取得しmap.project()で画面座標に変換してからクリックする方式に切替えて解決
 - 記事ネタ度: ★★★ / タグ: #エミュレータ不要の検証手法 #maplibre #ブラウザプレビュー活用
+
+| 2026-09-07 | railmap | 提出準備集約・公開条件確認 | 2ヶ月の停止から復帰。提出物が5階層に分散していたためデスクトップ直下へ集約。PLAY_LISTING_DRAFTのポリシーURLが`fillmap-apps/privacy.html`(404)だったのを`adgrky.github.io/railmap/privacy.html`(200)へ訂正。個人アカウントのテスター12人×14日要件を公式ヘルプで裏取り。 | 停止原因はコードではなく管理画面の情報設計。以降は提出セット方式で集約する。 |
