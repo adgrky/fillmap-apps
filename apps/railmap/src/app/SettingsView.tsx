@@ -1,7 +1,7 @@
 // 設定画面(SPEC §5.5)。app層。
 import { useRef, useState } from "react";
 import type { ThemeColor } from "../domain/types";
-import { exportData, parseImported, createInitialData } from "../domain/persistence";
+import { exportData, parseImported, createInitialData, saveData } from "../domain/persistence";
 import { useRailStore } from "../domain/store";
 import { redeemPremiumCode } from "@fillmap/core/generic";
 import { isNativeApp, purchasePremium, restorePurchases } from "@fillmap/core";
@@ -91,7 +91,11 @@ export function SettingsView({ premium, onPremiumUnlocked }: Props) {
   const handleClear = () => {
     if (clearStep === 0) { setClearStep(1); return; }
     if (clearStep === 1) { setClearStep(2); return; }
-    useRailStore.setState({ data: createInitialData() });
+    // setState だけでは保存領域が更新されず、再起動で記録が復活してしまう
+    // (store の persist ヘルパーを経由しないため)。明示的に保存する。
+    const cleared = createInitialData();
+    useRailStore.setState({ data: cleared });
+    saveData(cleared);
     setClearStep(0);
   };
 

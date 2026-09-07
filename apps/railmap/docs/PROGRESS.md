@@ -50,3 +50,14 @@
 ## 2026-09-07 検算(都道府県付与)
 - 山手線(JR東)→東京のみ / 東海道新幹線→東京・神奈川・岐阜・静岡・愛知・滋賀・京都・大阪 / 沖縄都市モノレール→沖縄のみ。いずれも一致。
 - 東北新幹線の「茨城」は簡略化の誤りではなく実データで交差(生ポリゴンでも交差長 0.0965度≒10km)。簡略化(33m)による差は 0.00008度で無視できる。
+
+## 2026-09-07 データ全消去が保存領域に反映されない不具合を修正
+- 完了: SettingsView の全消去が `useRailStore.setState({data: createInitialData()})` のみで store の persist ヘルパーを経由せず、localStorage が更新されないまま(再起動で記録が復活)。`saveData(cleared)` を明示追加。エミュレータで検証: 削除前158件/11185文字 → 削除後0件/156文字 → force-stop後の再起動でも0件・全国0%を確認。
+- 決定: Playデータセーフティで「データ削除の手段を提供している」と申告するため、実態を先に修正してから申告する。削除案内ページを新規公開(https://adgrky.github.io/railmap/data-deletion.html、gh-pagesへ直接追加)。
+- 残課題: 同じ全消去パターンが citymap/kokudomap/michimap/yamamap にもある可能性が高い(要確認・横展開)。
+
+## 2026-09-07 データセーフティ申告の根拠を実物で確認
+- 通信先は https のみ4件(openfreemap/AdMob/GoogleSyndication/goatcounter)。http は0件 → 「転送時に暗号化」= はい。
+- 計測(GoatCounter)は VITE_GOATCOUNTER_CODE 未設定によりビルド成果物に含まれず(dist の JS で "goatcounter" 0件) → 申告は広告IDのみで実態と一致。
+- 広告IDの使用は .aab の権限宣言で確定: `com.google.android.gms.permission.AD_ID` / `android.permission.ACCESS_ADSERVICES_AD_ID`。データ種類は「デバイスまたはその他のID」(公式ヘルプで確認。「アプリのアクティビティ」ではない)。
+- アカウント作成機能なし → アカウント関連の申告は「該当なし」。
